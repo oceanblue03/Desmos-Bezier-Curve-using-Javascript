@@ -1,0 +1,95 @@
+// run this in console
+
+function connect_two_points_L(p1, p2) { // input latex must be in the form of (X, Y)
+    xyarray1 = p1.slice(1, p1.length-1).split(",")
+    xyarray2 = p2.slice(1, p2.length-1).split(",")
+    x1 = xyarray1[0]
+    x2 = xyarray2[0]
+    y1 = xyarray1[1]
+    y2 = xyarray2[1]
+    line = `(${x1}+(${x2}-(${x1}))t,${y1}+(${y2}-(${y1}))t)`
+    return line
+}
+
+function connect_two_points_P(p1, p2) { // input latex must be in the form of (X, Y)
+    xyarray1 = p1.slice(1, p1.length-1).split(",")
+    xyarray2 = p2.slice(1, p2.length-1).split(",")
+    x1 = xyarray1[0]
+    x2 = xyarray2[0]
+    y1 = xyarray1[1]
+    y2 = xyarray2[1]
+    point = `(${x1}+(${x2}-(${x1}))T,${y1}+(${y2}-(${y1}))T)`
+    return point
+}
+
+function cos(x) {
+    return Math.cos(x)
+}
+
+function sin(x) {
+    return Math.sin(x)
+}
+
+pi = Math.PI
+
+//--------------------------------------------------------------------------------------------------------
+// main algorithm
+
+function bezier_curve(n) { // n = 7 is the limit (for my pc)
+    two_dimensional_points_array = []
+    for (i = 0; i < n; i++) {
+        two_dimensional_points_array[i] = []
+    }
+
+    for (i = 0; i < n; i++) { // points
+        if (i == 0) {
+            for (j = 0; j < n; j++) { // add_first_order_points
+                two_dimensional_points_array[0][j] = `(x_${j},y_${j})`
+            }
+        }
+        else {
+            for (j = 0; j < n - i; j++) {
+                two_dimensional_points_array[i][j] = connect_two_points_P(two_dimensional_points_array[i - 1][j], two_dimensional_points_array[i - 1][j + 1])
+            }
+        }
+    }
+
+    //--------------------------------------------------------------------------------------------------------
+    // setting expressions
+
+    Calc.setBlank()
+    Calc.setExpression({id: "T", latex: "T=0", sliderBounds: {min: "0", max: "1", step: "0.01" }})
+    initial_state = Calc.getState()
+    initial_state.expressions.list[0].slider.loopMode = "LOOP_FORWARD"
+    Calc.setState(initial_state)
+
+    for (i = 0; i < n; i++) { // points
+        for (j = 0; j < n - i; j++) {
+            latex = two_dimensional_points_array[i][j]
+
+            color = "black"; pointOpacity = 0.2
+            if (i == n - 1) {color = "green"; pointOpacity = 0.9}
+            Calc.setExpression({id: `p[${i}][${j}]`, latex: latex, color: color, pointOpacity: pointOpacity})
+        }
+    }
+
+    for (i = 0; i < n - 1; i++) { // lines
+        for (j = 0; j < n - i - 1; j++) {
+            latex = (connect_two_points_L(two_dimensional_points_array[i][j], two_dimensional_points_array[i][j + 1]))
+            Calc.setExpression({id: `l[${i}][${j}]`, latex: latex, color: "black", lineOpacity: 0.2})
+        }
+    }
+
+    latex = two_dimensional_points_array[n - 1][0].split("T").join("t") + "\\left\\{0\\le t\\le T\\right\\}"
+    Calc.setExpression({id: "curve", latex: latex, color: "green"}) // curve
+
+    for (i = 0; i < n; i++) {
+        x_value = Math.round(8 * cos(- (2 * pi * i / n) - pi / 2 - pi / n) * 10000) / 10000
+        y_value = Math.round(8 * sin(- (2 * pi * i / n) - pi / 2 - pi / n) * 10000) / 10000
+
+        Calc.setExpression({id: `acp_1_${i}`, latex: `x_${i}=${x_value}`})
+        Calc.setExpression({id: `acp_2_${i}`, latex: `y_${i}=${y_value}`})
+    }
+}
+
+bezier_curve(5)
